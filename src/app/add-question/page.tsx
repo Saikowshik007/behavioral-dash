@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -19,7 +18,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useForm } from 'react-hook-form';
@@ -101,6 +99,7 @@ const AddQuestionPage = () => {
       // Reset form
       form.reset();
     } catch (error) {
+        console.error('Error deleting question:', error);
       toast({
         title: 'Error',
         description: 'Failed to add question. Please try again.',

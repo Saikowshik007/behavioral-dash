@@ -1,7 +1,7 @@
 // app/edit-question/page.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -18,7 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 interface QuestionFormData {
   Question: string;
   Type: string;
-  Generic_Answer: string;
+  Generic: string;
   Situation: string;
   Task: string;
   Action: string;
@@ -54,7 +54,7 @@ const questionTypes = [
   
 ];
 
-export default function EditQuestionPage() {
+function EditQuestionForm(){
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
@@ -64,7 +64,7 @@ export default function EditQuestionPage() {
   const [formData, setFormData] = useState<QuestionFormData>({
     Question: '',
     Type: '',
-    Generic_Answer: '',
+    Generic: '',
     Situation: '',
     Task: '',
     Action: '',
@@ -124,6 +124,7 @@ export default function EditQuestionPage() {
       router.push('/');
       router.refresh();
     } catch (error) {
+        console.error('Error parsing question data:', error);
       toast({
         title: 'Error',
         description: 'Failed to update question. Please try again.',
@@ -178,13 +179,13 @@ export default function EditQuestionPage() {
 
             <div className="space-y-2">
               <label className="text-sm font-medium">
-                Generic Answer
+                Generic
               </label>
               <Textarea
                 placeholder="Enter a generic answer..."
                 className="min-h-[100px]"
-                value={formData.Generic_Answer}
-                onChange={(e) => handleInputChange('Generic_Answer', e.target.value)}
+                value={formData.Generic}
+                onChange={(e) => handleInputChange('Generic', e.target.value)}
               />
             </div>
 
@@ -247,5 +248,31 @@ export default function EditQuestionPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+function LoadingState() {
+  return (
+    <div className="p-6 max-w-4xl mx-auto">
+      <Card>
+        <CardHeader>
+          <CardTitle>Loading...</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="animate-pulse space-y-4">
+            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+            <div className="h-4 bg-gray-200 rounded"></div>
+            <div className="h-4 bg-gray-200 rounded"></div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+export default function EditQuestionPage() {
+  return (
+    <Suspense fallback={<LoadingState />}>
+      <EditQuestionForm />
+    </Suspense>
   );
 }

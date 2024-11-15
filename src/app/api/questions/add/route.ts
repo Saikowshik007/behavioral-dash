@@ -9,14 +9,13 @@ export async function POST(req: NextRequest) {
     const data = await req.json();
     const csvFilePath = path.join(process.cwd(), 'public', 'data', 'merged.csv');
 
-    // Read existing CSV file
-    let csvContent = await fs.readFile(csvFilePath, 'utf-8');
+
+    const csvContent = await fs.readFile(csvFilePath, 'utf-8');
     let records = Papa.parse(csvContent, { header: true }).data;
 
-    // Add new record
+
     records = [...records, data];
 
-    // Convert back to CSV
     const newCsvContent = Papa.unparse(records);
 
     // Write back to file

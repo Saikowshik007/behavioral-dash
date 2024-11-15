@@ -1,4 +1,4 @@
-// app/api/questions/edit/route.ts
+// app/api/questions/delete/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { promises as fs } from 'fs';
 import path from 'path';
@@ -13,19 +13,17 @@ interface InterviewQA {
   Type: string;
 }
 
-export async function PUT(req: NextRequest) {
+export async function DELETE(req: NextRequest) {
   try {
-    const { originalQuestion, updatedQuestion } = await req.json();
+    const { question } = await req.json();
     const csvFilePath = path.join(process.cwd(), 'public', 'data', 'merged.csv');
 
     // Read existing CSV file
     const csvContent = await fs.readFile(csvFilePath, 'utf-8');
     let records = Papa.parse<InterviewQA>(csvContent, { header: true }).data;
 
-    // Find and update the question
-    records = records.map((record: InterviewQA) =>
-      record.Question === originalQuestion ? updatedQuestion : record
-    );
+    // Filter out the question to delete
+    records = records.filter((record: InterviewQA) => record.Question !== question);
 
     // Convert back to CSV
     const newCsvContent = Papa.unparse(records);
@@ -35,11 +33,10 @@ export async function PUT(req: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error updating question:', error);
+    console.error('Error deleting question:', error);
     return NextResponse.json(
-      { error: 'Failed to update question' },
+      { error: 'Failed to delete question' },
       { status: 500 }
     );
   }
 }
-

@@ -34,6 +34,11 @@ function genId() {
 
 type ActionType = typeof actionTypes
 
+function performAction(type: keyof typeof actionTypes) {
+  console.log(`Performing action: ${type}`);
+}
+performAction(actionTypes.ADD_TOAST);
+
 type Action =
   | {
       type: ActionType["ADD_TOAST"]

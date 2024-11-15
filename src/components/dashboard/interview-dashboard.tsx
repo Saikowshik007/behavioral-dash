@@ -28,6 +28,11 @@ interface InterviewQA {
   Result: string;
   Type: string;
 }
+interface CustomError {
+  message: string;
+  statusCode?: number;
+  details?: string;
+}
 
 const COLORS = {
   'Introduction': '#3498db',
@@ -81,12 +86,8 @@ const InterviewDashboard = () => {
     };
 
 const handleEdit = (question: InterviewQA) => {
-  // Encode the question data in the URL
-  const queryParams = new URLSearchParams({
-    data: JSON.stringify(question)
-  }).toString();
-
-  router.push(`/edit-question?${queryParams}`);
+  const encodedData = encodeURIComponent(JSON.stringify(question));
+  router.push(`/edit-question?data=${encodedData}`);
 };
 
     const handleDelete = async (question: InterviewQA) => {
@@ -111,6 +112,7 @@ const handleEdit = (question: InterviewQA) => {
         // Refresh the data
         router.refresh();
       } catch (error) {
+          console.error('Error deleting question:', error);
         toast({
           title: 'Error',
           description: 'Failed to delete question',
@@ -122,7 +124,8 @@ const handleEdit = (question: InterviewQA) => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const response = await fetch('/data/merged.csv');
+        const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+        const response = await fetch(`${basePath}/data/merged.csv`);
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -150,7 +153,7 @@ const handleEdit = (question: InterviewQA) => {
             setData(parsedData);
             setLoading(false);
           },
-          error: (error) => {
+          error: (error: CustomError) => {
             setError(`Error parsing CSV: ${error.message}`);
             setLoading(false);
           }
@@ -328,7 +331,6 @@ return (
                       cx,
                       cy,
                       midAngle,
-                      innerRadius,
                       outerRadius,
                       value,
                       name
