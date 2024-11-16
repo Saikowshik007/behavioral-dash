@@ -1,18 +1,24 @@
-/** @type {import('next').NextConfig} */
+const isProduction = process.env.NODE_ENV === 'production';
+const repositoryName = 'behavioral-dash'; // Replace with your repository name
+
 const nextConfig = {
   output: 'export',
   images: {
     unoptimized: true,
   },
-  basePath: '/behavioral-dash', // Replace with your repository name
-  assetPrefix: '/behavioral-dash/', // Replace with your repository name
+  reactStrictMode: true,
+  basePath: isProduction ? `/${repositoryName}` : '',
+  assetPrefix: isProduction ? `/${repositoryName}/` : '',
+  trailingSlash: true,
 
   webpack: (config) => {
     config.module.rules.push({
       test: /\.csv$/,
       loader: 'file-loader',
       options: {
-        name: 'static/[name].[ext]',
+        name: '[name].[ext]',
+        publicPath: `/_next/static/`,
+        outputPath: 'static/',
       },
     });
     return config;
@@ -20,20 +26,3 @@ const nextConfig = {
 };
 
 module.exports = nextConfig;
-
-
-///** @type {import('next').NextConfig} */
-//const nextConfig = {
-//  webpack: (config) => {
-//    config.module.rules.push({
-//      test: /\.csv$/,
-//      loader: 'file-loader',
-//      options: {
-//        name: 'static/[name].[ext]',
-//      },
-//    });
-//    return config;
-//  },
-//};
-//
-//module.exports = nextConfig;

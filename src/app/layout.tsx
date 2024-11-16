@@ -1,11 +1,11 @@
 
 import "./globals.css";
-import Navigation from "./components/Navigation";
 import { Inter } from "next/font/google";
-import { Toaster } from "@/components/ui/toaster";
 
 const inter = Inter({ subsets: ["latin"] });
-
+const baseUrl = process.env.NODE_ENV === 'production'
+  ? '/behavioral-dash'
+  : '';
 
 export const metadata = {
   title: 'Interview Dashboard',
@@ -19,11 +19,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={inter.className}>
-        <Navigation />
-        <main>{children}</main>
-        <Toaster />
-      </body>
+      <head>
+        <meta charSet="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <base href={baseUrl + '/'} />
+      </head>
+      <body className={inter.className}>{children}</body>
     </html>
   );
 }
