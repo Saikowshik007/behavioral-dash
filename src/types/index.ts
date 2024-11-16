@@ -1,4 +1,4 @@
-export interface InterviewQA {
+export interface Question {
   Question: string;
   Generic_Answer: string;
   Situation: string;

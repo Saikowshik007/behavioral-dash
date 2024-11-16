@@ -1,48 +1,50 @@
-// app/api/questions/edit/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { promises as fs } from 'fs';
-import path from 'path';
-import Papa from 'papaparse';
-interface InterviewQA {
-  Question: string;
-  Generic: string;
-  Situation: string;
-  Task: string;
-  Action: string;
-  Result: string;
-  Type: string;
+import { db } from '@/lib/firebase';
+import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+
+interface QuestionUpdate {
+  id: string;
+  Question?: string;
+  Generic_Answer?: string;
+  Situation?: string;
+  Task?: string;
+  Action?: string;
+  Result?: string;
+  Type?: string;
 }
 
 export async function PUT(req: NextRequest) {
   try {
-      console.log("In the edit window");
-    const { originalQuestion, updatedQuestion } = await req.json();
-    const csvFilePath = path.join(process.cwd(), 'data', 'merged.csv');
-    console.log("csv path",csvFilePath);
+    const { id, ...updatedData }: QuestionUpdate = await req.json();
 
-    // Read existing CSV file
-    const csvContent = await fs.readFile(csvFilePath, 'utf-8');
-    let records = Papa.parse<InterviewQA>(csvContent, { header: true }).data;
+    if (!id) {
+      return NextResponse.json(
+        { error: 'Question ID is required' },
+        { status: 400 }
+      );
+    }
 
-    // Find and update the question
-    records = records.map((record: InterviewQA) =>
-      record.Question === originalQuestion ? updatedQuestion : record
-    );
+    // Get reference to the specific document
+    const questionRef = doc(db, 'questions', id);
 
-    // Convert back to CSV
-    const newCsvContent = Papa.unparse(records);
+    // Add timestamp to track updates
+    const dataToUpdate = {
+      ...updatedData,
+      updatedAt: serverTimestamp()
+    };
 
-    // Write back to file
-    await fs.writeFile(csvFilePath, newCsvContent);
+    // Update the document
+    await updateDoc(questionRef, dataToUpdate);
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ 
+      success: true,
+      message: 'Question updated successfully'
+    });
   } catch (error) {
     console.error('Error updating question:', error);
     return NextResponse.json(
       { error: 'Failed to update question' },
       { status: 500 }
-
     );
   }
 }
-

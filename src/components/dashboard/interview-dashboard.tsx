@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Search, Edit, Trash2, Plus, ChevronDown } from 'lucide-react';
 import { PieChart, Pie, Cell } from 'recharts';
 import { Button } from "@/components/ui/button";
-import Papa from 'papaparse';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,16 +17,22 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
+import { db } from '@/lib/firebase';
+import { collection, getDocs, deleteDoc, doc } from 'firebase/firestore';
 
 interface InterviewQA {
+  id: string;
   Question: string;
-  Generic: string;
+  Generic_Answer: string;
   Situation: string;
   Task: string;
   Action: string;
   Result: string;
   Type: string;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
+
 interface CustomError {
   message: string;
   statusCode?: number;
@@ -68,51 +73,44 @@ const InterviewDashboard = () => {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-   const [deleteQuestion, setDeleteQuestion] = useState<InterviewQA | null>(null);
-   const [expandedQuestions, setExpandedQuestions] = useState<Set<number>>(new Set());
-    const { toast } = useToast();
-    const router = useRouter();
+  const [deleteQuestion, setDeleteQuestion] = useState<InterviewQA | null>(null);
+  const [expandedQuestions, setExpandedQuestions] = useState<Set<string>>(new Set());
+  const { toast } = useToast();
+  const router = useRouter();
 
-    const toggleQuestion = (index: number) => {
-      setExpandedQuestions(prev => {
-        const newSet = new Set(prev);
-        if (newSet.has(index)) {
-          newSet.delete(index);
-        } else {
-          newSet.add(index);
-        }
-        return newSet;
+  const toggleQuestion = (id: string) => {
+    setExpandedQuestions(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
+  };
+
+  const handleEdit = (question: InterviewQA) => {
+    const encodedData = encodeURIComponent(JSON.stringify(question));
+    router.push(`/edit-question?data=${encodedData}`);
+  };
+
+  const handleDelete = async (question: InterviewQA) => {
+    try {
+      if (!question.id) {
+        throw new Error('Question ID is required for deletion');
+      }
+
+      await deleteDoc(doc(db, 'questions', question.id));
+
+      toast({
+        title: 'Success',
+        description: 'Question deleted successfully',
       });
-    };
-
-const handleEdit = (question: InterviewQA) => {
-  const encodedData = encodeURIComponent(JSON.stringify(question));
-  router.push(`/edit-question?data=${encodedData}`);
-};
-
-    const handleDelete = async (question: InterviewQA) => {
-      try {
-        const response = await fetch('/api/questions/delete', {
-          method: 'DELETE',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ question: question.Question }),
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to delete question');
-        }
-
-        toast({
-          title: 'Success',
-          description: 'Question deleted successfully',
-        });
-
-        // Refresh the data
-        router.refresh();
+       // Update local state to remove the deleted question
+        setData(prevData => prevData.filter(q => q.id !== question.id));
       } catch (error) {
-          console.error('Error deleting question:', error);
+        console.error('Error deleting question:', error);
         toast({
           title: 'Error',
           description: 'Failed to delete question',
@@ -121,47 +119,32 @@ const handleEdit = (question: InterviewQA) => {
       }
     };
 
+
   useEffect(() => {
     const loadData = async () => {
       try {
-        const url = '/data/merged.csv';
-        console.log('Attempting to fetch CSV from:', url);
-        const response = await fetch(`/data/merged.csv`);
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+        const questionsRef = collection(db, 'questions');
+        const querySnapshot = await getDocs(questionsRef);
+
+        const fetchedData: InterviewQA[] = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          // Convert Firestore Timestamps to Dates if needed
+          createdAt: doc.data().createdAt?.toDate(),
+          updatedAt: doc.data().updatedAt?.toDate(),
+        })) as InterviewQA[];
+
+        if (fetchedData.length === 0) {
+          setError('No questions found in the database');
+          setLoading(false);
+          return;
         }
-        const csvText = await response.text();
 
-        Papa.parse<InterviewQA>(csvText, {
-          header: true,
-          skipEmptyLines: true,
-          transformHeader: (header) => header.trim(),
-          transform: (value) => value.trim(),
-          complete: (results) => {
-            const parsedData = results.data.filter(item =>
-              item.Question &&
-              typeof item.Question === 'string' &&
-              item.Type &&
-              typeof item.Type === 'string'
-            );
-
-            if (parsedData.length === 0) {
-              setError('No valid data found in CSV file');
-              setLoading(false);
-              return;
-            }
-
-            setData(parsedData);
-            setLoading(false);
-          },
-          error: (error: CustomError) => {
-            setError(`Error parsing CSV: ${error.message}`);
-            setLoading(false);
-          }
-        });
+        setData(fetchedData);
+        setLoading(false);
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-        setError(`Error loading CSV: ${errorMessage}`);
+        setError(`Error loading questions: ${errorMessage}`);
         setLoading(false);
       }
     };
@@ -170,62 +153,51 @@ const handleEdit = (question: InterviewQA) => {
   }, []);
 
   // Get all unique tags from the data
-  const allTags = [...new Set(data.map(item => item.Type).filter(Boolean))];
+   const allTags = [...new Set(data.map(item => item.Type).filter(Boolean))];
 
-  // Toggle tag selection
-  const toggleTag = (tag: string) => {
-    setSelectedTags(prev =>
-      prev.includes(tag)
-        ? prev.filter(t => t !== tag)
-        : [...prev, tag]
+    // Toggle tag selection
+    const toggleTag = (tag: string) => {
+      setSelectedTags(prev =>
+        prev.includes(tag)
+          ? prev.filter(t => t !== tag)
+          : [...prev, tag]
+      );
+    };
+
+    // Count questions by type
+    const typeCount = data.reduce((acc: Record<string, number>, curr) => {
+      if (curr.Type) {
+        acc[curr.Type] = (acc[curr.Type] || 0) + 1;
+      }
+      return acc;
+    }, {});
+
+    // Sort data for pie chart
+    const sortedPieData = Object.entries(typeCount)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
+
+    // Tag colors mapping
+    const tagColors = Object.fromEntries(
+      allTags.map(tag => [tag, COLORS[tag as keyof typeof COLORS] || '#999999'])
     );
-  };
 
-  // Count questions by type
-  const typeCount = data.reduce((acc: Record<string, number>, curr) => {
-    if (curr.Type) {
-      acc[curr.Type] = (acc[curr.Type] || 0) + 1;
-    }
-    return acc;
-  }, {});
+    // Filter data based on search and selected tags
+    const filteredData = data.filter(item => {
+      const matchesSearch =
+        item.Question?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.Generic_Answer?.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesTags = selectedTags.length === 0 || selectedTags.includes(item.Type);
+      return matchesSearch && matchesTags;
+    });
 
-  // Sort data for pie chart
-  const sortedPieData = Object.entries(typeCount)
-    .map(([name, value]) => ({ name, value }))
-    .sort((a, b) => b.value - a.value);
-
-  // Tag colors mapping
-  const tagColors = Object.fromEntries(
-    allTags.map(tag => [tag, COLORS[tag as keyof typeof COLORS] || '#999999'])
-  );
-
-  // Filter data based on search and selected tags
-  const filteredData = data.filter(item => {
-    const matchesSearch =
-      (item.Question?.toLowerCase().includes(searchTerm.toLowerCase()) || false) ||
-      (item.Generic?.toLowerCase().includes(searchTerm.toLowerCase()) || false);
-    const matchesTags = selectedTags.length === 0 || selectedTags.includes(item.Type);
-    return matchesSearch && matchesTags;
-  });
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p className="text-lg">Loading data...</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p className="text-lg text-red-500">{error}</p>
-      </div>
-    );
-  }
+    // Your existing loading and error JSX remains the same
+    if (loading) return <div className="flex items-center justify-center min-h-screen"><p className="text-lg">Loading data...</p></div>;
+    if (error) return <div className="flex items-center justify-center min-h-screen"><p className="text-lg text-red-500">{error}</p></div>;
 
 return (
     <div className="p-6 max-w-7xl mx-auto">
+      {/* Your existing JSX structure remains largely the same, just update the mapping to use question.id instead of index */}
       <div className="mb-8">
         {/* Header with Add Button */}
         <div className="flex justify-between items-center mb-4">
@@ -387,139 +359,137 @@ return (
 
         {/* Question List */}
    {/* Question List */}
-  <div className="space-y-4">
-    {filteredData.map((item, index) => {
-      // Check if STAR fields are empty
-      const hasStarContent = item.Situation || item.Task || item.Action || item.Result;
+   <div className="space-y-4">
+            {filteredData.map((item) => {
+              const hasStarContent = item.Situation || item.Task || item.Action || item.Result;
 
-      return (
-        <Card key={index}>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <CardTitle>{item.Question}</CardTitle>
-                <div className="mt-2 flex items-center justify-between">
-                  <span
-                    className="px-3 py-1 rounded-full text-sm font-medium text-white"
-                    style={{ backgroundColor: tagColors[item.Type] }}
-                  >
-                    {item.Type}
-                  </span>
-                  <div className="flex space-x-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleEdit(item)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="text-red-600 hover:text-red-700"
-                      onClick={() => setDeleteQuestion(item)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {/* Toggle Button */}
-              <Button
-                variant="ghost"
-                className="w-full flex justify-between items-center py-2"
-                onClick={() => toggleQuestion(index)}
-              >
-                <span>Show Answer</span>
-                <ChevronDown
-                  className={`h-4 w-4 transform transition-transform ${
-                    expandedQuestions.has(index) ? 'rotate-180' : ''
-                  }`}
-                />
-              </Button>
-
-              {/* Collapsible Content */}
-              {expandedQuestions.has(index) && (
-                <div className="space-y-4">
-                  {!hasStarContent && item.Generic && (
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                      <h3 className="font-semibold mb-2">Answer:</h3>
-                      <p className="text-gray-700">{item.Generic}</p>
+              return (
+                <Card key={item.id}>
+                  {/* Card content structure remains the same */}
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <CardTitle>{item.Question}</CardTitle>
+                        <div className="mt-2 flex items-center justify-between">
+                          <span
+                            className="px-3 py-1 rounded-full text-sm font-medium text-white"
+                            style={{ backgroundColor: tagColors[item.Type] }}
+                          >
+                            {item.Type}
+                          </span>
+                          <div className="flex space-x-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleEdit(item)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-red-600 hover:text-red-700"
+                              onClick={() => setDeleteQuestion(item)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                  )}
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <Button
+                        variant="ghost"
+                        className="w-full flex justify-between items-center py-2"
+                        onClick={() => toggleQuestion(item.id)}
+                      >
+                        <span>Show Answer</span>
+                        <ChevronDown
+                          className={`h-4 w-4 transform transition-transform ${
+                            expandedQuestions.has(item.id) ? 'rotate-180' : ''
+                          }`}
+                        />
+                      </Button>
 
-                  {hasStarContent && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {item.Situation && (
-                        <div className="bg-gray-50 p-4 rounded-lg">
-                          <h3 className="font-semibold mb-2">Situation:</h3>
-                          <p className="text-gray-700">{item.Situation}</p>
-                        </div>
-                      )}
-                      {item.Task && (
-                        <div className="bg-gray-50 p-4 rounded-lg">
-                          <h3 className="font-semibold mb-2">Task:</h3>
-                          <p className="text-gray-700">{item.Task}</p>
-                        </div>
-                      )}
-                      {item.Action && (
-                        <div className="bg-gray-50 p-4 rounded-lg">
-                          <h3 className="font-semibold mb-2">Action:</h3>
-                          <p className="text-gray-700">{item.Action}</p>
-                        </div>
-                      )}
-                      {item.Result && (
-                        <div className="bg-gray-50 p-4 rounded-lg">
-                          <h3 className="font-semibold mb-2">Result:</h3>
-                          <p className="text-gray-700">{item.Result}</p>
+                      {expandedQuestions.has(item.id) && (
+                        <div className="space-y-4">
+                          {!hasStarContent && item.Generic_Answer && (
+                            <div className="bg-gray-50 p-4 rounded-lg">
+                              <h3 className="font-semibold mb-2">Answer:</h3>
+                              <p className="text-gray-700">{item.Generic_Answer}</p>
+                            </div>
+                          )}
+
+                          {hasStarContent && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              {item.Situation && (
+                                <div className="bg-gray-50 p-4 rounded-lg">
+                                  <h3 className="font-semibold mb-2">Situation:</h3>
+                                  <p className="text-gray-700">{item.Situation}</p>
+                                </div>
+                              )}
+                              {item.Task && (
+                                <div className="bg-gray-50 p-4 rounded-lg">
+                                  <h3 className="font-semibold mb-2">Task:</h3>
+                                  <p className="text-gray-700">{item.Task}</p>
+                                </div>
+                              )}
+                              {item.Action && (
+                                <div className="bg-gray-50 p-4 rounded-lg">
+                                  <h3 className="font-semibold mb-2">Action:</h3>
+                                  <p className="text-gray-700">{item.Action}</p>
+                                </div>
+                              )}
+                              {item.Result && (
+                                <div className="bg-gray-50 p-4 rounded-lg">
+                                  <h3 className="font-semibold mb-2">Result:</h3>
+                                  <p className="text-gray-700">{item.Result}</p>
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      );
-    })}
-  </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
 
         {/* Delete Confirmation Dialog */}
         <AlertDialog
-          open={!!deleteQuestion}
-          onOpenChange={() => setDeleteQuestion(null)}
-        >
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-              <AlertDialogDescription>
-                This action cannot be undone. This will permanently delete the question.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                className="bg-red-600 hover:bg-red-700"
-                onClick={() => {
-                  if (deleteQuestion) {
-                    handleDelete(deleteQuestion);
-                    setDeleteQuestion(null);
-                  }
-                }}
-              >
-                Delete
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      </div>
-    </div>
-  );
-};
+                 open={!!deleteQuestion}
+                 onOpenChange={() => setDeleteQuestion(null)}
+               >
+                 <AlertDialogContent>
+                   <AlertDialogHeader>
+                     <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                     <AlertDialogDescription>
+                       This action cannot be undone. This will permanently delete the question.
+                     </AlertDialogDescription>
+                   </AlertDialogHeader>
+                   <AlertDialogFooter>
+                     <AlertDialogCancel>Cancel</AlertDialogCancel>
+                     <AlertDialogAction
+                       className="bg-red-600 hover:bg-red-700"
+                       onClick={() => {
+                         if (deleteQuestion) {
+                           handleDelete(deleteQuestion);
+                           setDeleteQuestion(null);
+                         }
+                       }}
+                     >
+                       Delete
+                     </AlertDialogAction>
+                   </AlertDialogFooter>
+                 </AlertDialogContent>
+               </AlertDialog>
+             </div>
+           </div>
+         );
+       };
 
 export default InterviewDashboard;

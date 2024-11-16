@@ -1,11 +1,11 @@
-// app/api/questions/delete/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { promises as fs } from 'fs';
-import path from 'path';
-import Papa from 'papaparse';
-interface InterviewQA {
+import { db } from '@/lib/firebase';
+import { doc, deleteDoc } from 'firebase/firestore';
+
+interface Question {
+  id: string;
   Question: string;
-  Generic: string;
+  Generic_Answer: string;
   Situation: string;
   Task: string;
   Action: string;
@@ -15,23 +15,25 @@ interface InterviewQA {
 
 export async function DELETE(req: NextRequest) {
   try {
-    const { question } = await req.json();
-    const csvFilePath = path.join(process.cwd(), 'data', 'merged.csv');
+    const { id } = await req.json();
 
-    // Read existing CSV file
-    const csvContent = await fs.readFile(csvFilePath, 'utf-8');
-    let records = Papa.parse<InterviewQA>(csvContent, { header: true }).data;
+    if (!id) {
+      return NextResponse.json(
+        { error: 'Question ID is required' },
+        { status: 400 }
+      );
+    }
 
-    // Filter out the question to delete
-    records = records.filter((record: InterviewQA) => record.Question !== question);
+    // Get reference to the specific document
+    const questionRef = doc(db, 'questions', id);
 
-    // Convert back to CSV
-    const newCsvContent = Papa.unparse(records);
+    // Delete the document
+    await deleteDoc(questionRef);
 
-    // Write back to file
-    await fs.writeFile(csvFilePath, newCsvContent);
-
-    return NextResponse.json({ success: true });
+    return NextResponse.json({
+      success: true,
+      message: 'Question deleted successfully'
+    });
   } catch (error) {
     console.error('Error deleting question:', error);
     return NextResponse.json(
