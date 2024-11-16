@@ -129,7 +129,7 @@ const handleEdit = (question: InterviewQA) => {
             : '';
         const url = `${basePath}/data/merged.csv`;
         console.log('Attempting to fetch CSV from:', url);
-        const response = await fetch(`${basePath}/data/merged.csv`);
+        const response = await fetch(`/data/merged.csv`);
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
