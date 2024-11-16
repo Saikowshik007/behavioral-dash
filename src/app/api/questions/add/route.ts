@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, questionsCollection } from '@/lib/firebase';
+import {questionsCollection } from '@/lib/firebase';
 import { addDoc, serverTimestamp } from 'firebase/firestore';
 
 export async function POST(req: NextRequest) {
@@ -7,14 +7,12 @@ export async function POST(req: NextRequest) {
   
   try {
     const data = await req.json();
-    console.log('Received data:', data);
 
-    // Check if we're receiving the correct fields
-    if (!data.Question || !data.Type || !data.Generic_Answer) {
+    if (!data.Question || !data.Type || !data.Generic) {
       console.log('Missing required fields:', {
         hasQuestion: !!data.Question,
         hasType: !!data.Type,
-        hasGenericAnswer: !!data.Generic_Answer
+        hasGeneric: !!data.Generic
       });
       return NextResponse.json(
         { error: 'Missing required fields' },
@@ -22,11 +20,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Format the data for Firestore
     const questionData = {
       Question: data.Question,
       Type: data.Type,
-      Generic_Answer: data.Generic_Answer,
+      Generic: data.Generic,
       Situation: data.Situation || '',
       Task: data.Task || '',
       Action: data.Action || '',

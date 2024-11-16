@@ -40,12 +40,12 @@ export async function PUT(req: NextRequest) {
     }
 
     // Remove any undefined values from updatedData
-    const cleanedData = Object.entries(updatedData).reduce((acc, [key, value]) => {
+    const cleanedData = Object.entries(updatedData).reduce<QuestionData>((acc, [key, value]) => {
       if (value !== undefined) {
-        acc[key] = value;
+         acc[key as keyof QuestionData] = value;
       }
       return acc;
-    }, {} as Record<string, any>);
+    }, {});
 
     // Add timestamp to track updates
     const dataToUpdate = {

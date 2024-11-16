@@ -17,8 +17,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import { db, questionsCollection } from '@/lib/firebase';
-import { collection, getDocs, deleteDoc, doc , query, orderBy} from 'firebase/firestore';
+import { questionsCollection } from '@/lib/firebase';
+import { getDocs} from 'firebase/firestore';
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { CheckCircle2 } from 'lucide-react';
 
