@@ -101,6 +101,11 @@ function EditQuestionForm(){
     setIsSubmitting(true);
 
     try {
+              console.log("In the edit window");
+            const { originalQuestion, updatedQuestion } = await req.json();
+            const csvFilePath = path.join(process.cwd(), 'data', 'merged.csv');
+            console.log("csv path",csvFilePath);
+
       const response = await fetch('/api/questions/edit', {
         method: 'PUT',
         headers: {
