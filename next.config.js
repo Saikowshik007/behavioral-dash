@@ -1,16 +1,13 @@
-const isProduction = process.env.NODE_ENV === 'production';
-const repositoryName = 'behavioral-dash';
-
 const nextConfig = {
-  output: 'export',
+  // Remove output: 'export' as it forces static generation
   images: {
     unoptimized: true,
   },
   reactStrictMode: true,
-  basePath: isProduction ? `/${repositoryName}` : '',
-  assetPrefix: isProduction ? `/${repositoryName}` : '',
-  trailingSlash: true,
-  distDir: 'out',
+
+  // Remove basePath and assetPrefix as Vercel handles this automatically
+
+  // Remove distDir: 'out' as Vercel uses .next by default
 
   webpack: (config) => {
     config.module.rules.push({
@@ -18,7 +15,8 @@ const nextConfig = {
       loader: 'file-loader',
       options: {
         name: '[name].[ext]',
-        publicPath: isProduction ? `/${repositoryName}/_next/static/` : '/_next/static/',
+        // Update publicPath to work with Vercel
+        publicPath: '/_next/static/',
         outputPath: 'static/',
       },
     });
@@ -26,4 +24,4 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig;
+module.exports = nextConfig
