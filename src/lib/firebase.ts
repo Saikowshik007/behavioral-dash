@@ -1,5 +1,5 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
+import { getFirestore, collection } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -10,16 +10,23 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
+// Log the config to verify environment variables are loaded
+console.log('Firebase Config:', {
+  projectId: firebaseConfig.projectId,
+  authDomain: firebaseConfig.authDomain
+});
+
 // Initialize Firebase
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+
+// Initialize Firestore
 const db = getFirestore(app);
 
-export { db };
+// Log successful initialization
+console.log('Firestore initialized');
 
-// Optional: Log to verify config is loaded (remove in production)
-if (process.env.NODE_ENV !== 'production') {
-  console.log('Firebase initialized with config:', {
-    projectId: firebaseConfig.projectId,
-    authDomain: firebaseConfig.authDomain
-  });
-}
+// Initialize collections with logging
+const questionsCollection = collection(db, 'data');
+console.log('Questions collection reference created');
+
+export { db, questionsCollection };

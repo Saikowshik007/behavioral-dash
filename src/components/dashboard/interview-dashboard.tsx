@@ -17,13 +17,16 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import { db } from '@/lib/firebase';
-import { collection, getDocs, deleteDoc, doc } from 'firebase/firestore';
+import { db, questionsCollection } from '@/lib/firebase';
+import { collection, getDocs, deleteDoc, doc , query, orderBy} from 'firebase/firestore';
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { CheckCircle2 } from 'lucide-react';
+
 
 interface InterviewQA {
   id: string;
   Question: string;
-  Generic_Answer: string;
+  Generic: string;
   Situation: string;
   Task: string;
   Action: string;
@@ -69,6 +72,8 @@ const InterviewDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deleteQuestion, setDeleteQuestion] = useState<InterviewQA | null>(null);
+    const [showDeleteSuccess, setShowDeleteSuccess] = useState(false);
+    const [deletedQuestionId, setDeletedQuestionId] = useState<string | null>(null);
   const [expandedQuestions, setExpandedQuestions] = useState<Set<string>>(new Set());
   const { toast } = useToast();
   const router = useRouter();
@@ -91,61 +96,79 @@ const InterviewDashboard = () => {
   };
 
   const handleDelete = async (question: InterviewQA) => {
-    try {
-      if (!question.id) {
-        throw new Error('Question ID is required for deletion');
-      }
+     try {
+       const response = await fetch('/api/questions/delete', {
+         method: 'DELETE',
+         headers: {
+           'Content-Type': 'application/json',
+         },
+         body: JSON.stringify({ id: question.id }),
+       });
 
-      await deleteDoc(doc(db, 'questions', question.id));
+       const result = await response.json();
 
-      toast({
-        title: 'Success',
-        description: 'Question deleted successfully',
-      });
-       // Update local state to remove the deleted question
-        setData(prevData => prevData.filter(q => q.id !== question.id));
-      } catch (error) {
-        console.error('Error deleting question:', error);
-        toast({
-          title: 'Error',
-          description: 'Failed to delete question',
-          variant: 'destructive',
-        });
-      }
-    };
+       if (!response.ok) {
+         throw new Error(result.error || 'Failed to delete question');
+       }
+
+       // Show success state
+       setDeletedQuestionId(question.id);
+       setShowDeleteSuccess(true);
+
+       // Update local state
+       setData(prevData => prevData.filter(q => q.id !== question.id));
+
+       toast({
+         title: 'Success',
+         description: 'Question deleted successfully',
+       });
+
+       // Close the delete dialog
+       setDeleteQuestion(null);
+
+       // Hide success message after 2 seconds
+       setTimeout(() => {
+         setShowDeleteSuccess(false);
+         setDeletedQuestionId(null);
+       }, 2000);
+
+     } catch (error) {
+       console.error('Error deleting question:', error);
+       toast({
+         title: 'Error',
+         description: error instanceof Error ? error.message : 'Failed to delete question',
+         variant: 'destructive',
+       });
+     }
+   };
 
 
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        const questionsRef = collection(db, 'questions');
-        const querySnapshot = await getDocs(questionsRef);
+   useEffect(() => {
+      const loadQuestions = async () => {
+        try {
+          console.log('Starting to load questions...');
+          setLoading(true);
 
-        const fetchedData: InterviewQA[] = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          // Convert Firestore Timestamps to Dates if needed
-          createdAt: doc.data().createdAt?.toDate(),
-          updatedAt: doc.data().updatedAt?.toDate(),
-        })) as InterviewQA[];
+          const querySnapshot = await getDocs(questionsCollection);
+          console.log('Query snapshot received, size:', querySnapshot.size);
+          const fetchedData = querySnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+            createdAt: doc.data().createdAt?.toDate(),
+            updatedAt: doc.data().updatedAt?.toDate(),
+          })) as InterviewQA[];
 
-        if (fetchedData.length === 0) {
-          setError('No questions found in the database');
+          setData(fetchedData);
+        } catch (error) {
+          console.error('Error loading questions:', error);
+          setError('Failed to load questions');
+        } finally {
           setLoading(false);
-          return;
         }
+      };
 
-        setData(fetchedData);
-        setLoading(false);
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-        setError(`Error loading questions: ${errorMessage}`);
-        setLoading(false);
-      }
-    };
-
-    loadData();
-  }, []);
+      loadQuestions();
+    }, []);
 
   // Get all unique tags from the data
    const allTags = [...new Set(data.map(item => item.Type).filter(Boolean))];
@@ -181,7 +204,7 @@ const InterviewDashboard = () => {
     const filteredData = data.filter(item => {
       const matchesSearch =
         item.Question?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.Generic_Answer?.toLowerCase().includes(searchTerm.toLowerCase());
+        item.Generic?.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesTags = selectedTags.length === 0 || selectedTags.includes(item.Type);
       return matchesSearch && matchesTags;
     });
@@ -194,6 +217,15 @@ return (
     <div className="p-6 max-w-7xl mx-auto">
       {/* Your existing JSX structure remains largely the same, just update the mapping to use question.id instead of index */}
       <div className="mb-8">
+       {showDeleteSuccess && (
+                <Alert className="bg-green-50 border-green-200 mb-4">
+                  <CheckCircle2 className="h-4 w-4 text-green-600" />
+                  <AlertTitle className="text-green-800">Question Deleted Successfully!</AlertTitle>
+                  <AlertDescription className="text-green-700">
+                    Question with ID: {deletedQuestionId} has been removed.
+                  </AlertDescription>
+                </Alert>
+              )}
         {/* Header with Add Button */}
         <div className="flex justify-between items-center mb-4">
           <h1 className="text-3xl font-bold">Interview Q&A Dashboard</h1>
@@ -410,10 +442,10 @@ return (
 
                       {expandedQuestions.has(item.id) && (
                         <div className="space-y-4">
-                          {!hasStarContent && item.Generic_Answer && (
+                          {!hasStarContent && item.Generic && (
                             <div className="bg-gray-50 p-4 rounded-lg">
                               <h3 className="font-semibold mb-2">Answer:</h3>
-                              <p className="text-gray-700">{item.Generic_Answer}</p>
+                              <p className="text-gray-700">{item.Generic}</p>
                             </div>
                           )}
 
@@ -456,32 +488,47 @@ return (
 
         {/* Delete Confirmation Dialog */}
         <AlertDialog
-                 open={!!deleteQuestion}
-                 onOpenChange={() => setDeleteQuestion(null)}
-               >
-                 <AlertDialogContent>
-                   <AlertDialogHeader>
-                     <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                     <AlertDialogDescription>
-                       This action cannot be undone. This will permanently delete the question.
-                     </AlertDialogDescription>
-                   </AlertDialogHeader>
-                   <AlertDialogFooter>
-                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                     <AlertDialogAction
-                       className="bg-red-600 hover:bg-red-700"
-                       onClick={() => {
-                         if (deleteQuestion) {
-                           handleDelete(deleteQuestion);
-                           setDeleteQuestion(null);
-                         }
-                       }}
-                     >
-                       Delete
-                     </AlertDialogAction>
-                   </AlertDialogFooter>
-                 </AlertDialogContent>
-               </AlertDialog>
+          open={!!deleteQuestion}
+          onOpenChange={() => setDeleteQuestion(null)}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+              <AlertDialogDescription className="text-muted-foreground">
+                This action cannot be undone. This will permanently delete the question.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+
+            {deleteQuestion && (
+              <div className="my-4">
+                <div className="p-4 bg-gray-100 rounded-md space-y-2">
+                  <div className="flex items-start space-x-2">
+                    <span className="font-medium text-sm text-gray-700">Question:</span>
+                    <span className="text-sm text-gray-600">{deleteQuestion.Question}</span>
+                  </div>
+                  <div className="flex items-start space-x-2">
+                    <span className="font-medium text-sm text-gray-700">Type:</span>
+                    <span className="text-sm text-gray-600">{deleteQuestion.Type}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-red-600 hover:bg-red-700 text-white"
+                onClick={() => {
+                  if (deleteQuestion) {
+                    handleDelete(deleteQuestion);
+                  }
+                }}
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
              </div>
            </div>
          );

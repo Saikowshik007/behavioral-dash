@@ -1,8 +1,11 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { CheckCircle2 } from 'lucide-react';
 import {
   Form,
   FormControl,
@@ -60,8 +63,12 @@ const questionTypes = [
   'Process Improvement'
 ];
 
+
 const AddQuestionPage = () => {
+  const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [addedQuestionId, setAddedQuestionId] = useState<string | null>(null);
   const { toast } = useToast();
 
   const form = useForm<QuestionFormData>({
@@ -87,9 +94,15 @@ const AddQuestionPage = () => {
         body: JSON.stringify(data),
       });
 
+      const result = await response.json();
+
       if (!response.ok) {
-        throw new Error('Failed to add question');
+        throw new Error(result.error || 'Failed to add question');
       }
+
+      // Show success state
+      setAddedQuestionId(result.id);
+      setShowSuccess(true);
 
       toast({
         title: 'Success',
@@ -98,11 +111,18 @@ const AddQuestionPage = () => {
 
       // Reset form
       form.reset();
+
+      // Auto-redirect after 2 seconds
+      setTimeout(() => {
+        router.push('/');
+        router.refresh();
+      }, 2000);
+
     } catch (error) {
-        console.error('Error deleting question:', error);
+      console.error('Error adding question:', error);
       toast({
         title: 'Error',
-        description: 'Failed to add question. Please try again.',
+        description: error instanceof Error ? error.message : 'Failed to add question',
         variant: 'destructive',
       });
     } finally {
@@ -110,8 +130,25 @@ const AddQuestionPage = () => {
     }
   };
 
+  if (showSuccess) {
+    return (
+      <div className="p-6 max-w-4xl mx-auto">
+        <Alert className="bg-green-50 border-green-200">
+          <CheckCircle2 className="h-4 w-4 text-green-600" />
+          <AlertTitle className="text-green-800">Question Added Successfully!</AlertTitle>
+          <AlertDescription className="text-green-700">
+            Your question has been added with ID: {addedQuestionId}
+            <br />
+            Redirecting to dashboard...
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
+
   return (
-    <div className="p-6 max-w-4xl mx-auto">
+ <div className="p-6 max-w-4xl mx-auto">
       <Card>
         <CardHeader>
           <CardTitle>Add New Interview Question</CardTitle>
@@ -264,25 +301,37 @@ const AddQuestionPage = () => {
                 />
               </div>
 
-              <div className="flex justify-end space-x-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => form.reset()}
-                  disabled={isSubmitting}
-                >
-                  Reset
-                </Button>
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? 'Adding...' : 'Add Question'}
-                </Button>
-              </div>
-            </form>
-          </Form>
-        </CardContent>
-      </Card>
-    </div>
-  );
-};
+               <div className="flex justify-end space-x-4">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => router.push('/')}
+                                disabled={isSubmitting}
+                              >
+                                Cancel
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => form.reset()}
+                                disabled={isSubmitting}
+                              >
+                                Reset
+                              </Button>
+                              <Button
+                                type="submit"
+                                disabled={isSubmitting}
+                                className="bg-green-600 hover:bg-green-700"
+                              >
+                                {isSubmitting ? 'Adding...' : 'Add Question'}
+                              </Button>
+                            </div>
+                          </form>
+                        </Form>
+                      </CardContent>
+                    </Card>
+                  </div>
+                );
+              };
 
 export default AddQuestionPage;

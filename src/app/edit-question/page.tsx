@@ -54,17 +54,17 @@ const questionTypes = [
   
 ];
 
-function EditQuestionForm(){
+function EditQuestionForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [originalQuestion, setOriginalQuestion] = useState<string>('');
 
   const [formData, setFormData] = useState<QuestionFormData>({
+    id: '',
     Question: '',
     Type: '',
-    Generic: '',
+    Generic_Answer: '',
     Situation: '',
     Task: '',
     Action: '',
@@ -75,9 +75,12 @@ function EditQuestionForm(){
     const questionData = searchParams.get('data');
     if (questionData) {
       try {
-        const parsedData = JSON.parse(questionData);
+        const parsedData = JSON.parse(decodeURIComponent(questionData));
+        // Ensure we have an ID
+        if (!parsedData.id) {
+          throw new Error('Question ID is missing');
+        }
         setFormData(parsedData);
-        setOriginalQuestion(parsedData.Question);
       } catch (error) {
         console.error('Error parsing question data:', error);
         toast({
@@ -101,19 +104,31 @@ function EditQuestionForm(){
     setIsSubmitting(true);
 
     try {
+      // First, verify we have an ID
+      if (!formData.id) {
+        throw new Error('Question ID is required');
+      }
+
       const response = await fetch('/api/questions/edit', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          originalQuestion,
-          updatedQuestion: formData,
+          id: formData.id,
+          Question: formData.Question,
+          Type: formData.Type,
+          Generic_Answer: formData.Generic_Answer,
+          Situation: formData.Situation,
+          Task: formData.Task,
+          Action: formData.Action,
+          Result: formData.Result,
         }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to update question');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update question');
       }
 
       toast({
@@ -124,17 +139,16 @@ function EditQuestionForm(){
       router.push('/');
       router.refresh();
     } catch (error) {
-        console.error('Error parsing question data:', error);
+      console.error('Error updating question:', error);
       toast({
         title: 'Error',
-        description: 'Failed to update question. Please try again.',
+        description: error instanceof Error ? error.message : 'Failed to update question. Please try again.',
         variant: 'destructive',
       });
     } finally {
       setIsSubmitting(false);
     }
   };
-
   return (
     <div className="p-6 max-w-4xl mx-auto">
       <Card>
