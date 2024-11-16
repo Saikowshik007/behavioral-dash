@@ -2,16 +2,20 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/firebase';
 import { doc, updateDoc, serverTimestamp, getDoc } from 'firebase/firestore';
 
-interface QuestionUpdate {
-  id: string;
+interface QuestionData {
   Question?: string;
-  Generic?: string;
+  Type?: string;
+  Generic_Answer?: string;
   Situation?: string;
   Task?: string;
   Action?: string;
   Result?: string;
-  Type?: string;
 }
+
+interface QuestionUpdate extends QuestionData {
+  id: string;
+}
+
 
 export async function PUT(req: NextRequest) {
   try {
@@ -40,9 +44,9 @@ export async function PUT(req: NextRequest) {
     }
 
     // Remove any undefined values from updatedData
-    const cleanedData = Object.entries(updatedData).reduce<QuestionUpdate>((acc, [key, value]) => {
+    const cleanedData = Object.entries(updatedData).reduce<QuestionData>((acc, [key, value]) => {
       if (value !== undefined) {
-         acc[key as keyof QuestionUpdate] = value;
+         acc[key as keyof QuestionData] = value;
       }
       return acc;
     }, {});
