@@ -33,11 +33,6 @@ interface InterviewQA {
   updatedAt?: Date;
 }
 
-interface CustomError {
-  message: string;
-  statusCode?: number;
-  details?: string;
-}
 
 const COLORS = {
   'Introduction': '#3498db',

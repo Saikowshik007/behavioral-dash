@@ -2,16 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/firebase';
 import { doc, deleteDoc } from 'firebase/firestore';
 
-interface Question {
-  id: string;
-  Question: string;
-  Generic_Answer: string;
-  Situation: string;
-  Task: string;
-  Action: string;
-  Result: string;
-  Type: string;
-}
 
 export async function DELETE(req: NextRequest) {
   try {
