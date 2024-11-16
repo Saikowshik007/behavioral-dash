@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Search, Edit, Trash2, Plus, ChevronDown } from 'lucide-react';
-import { PieChart, Pie, Cell } from 'recharts';
+import { QuestionDistributionChart } from '@/components/QuestionDistributionChart';
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -310,79 +310,17 @@ return (
           </Card>
         </div>
 
-        {/* Distribution Chart */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>Question Type Distribution</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col items-center">
-              <div className="w-full max-w-3xl">
-                <PieChart width={800} height={400}>
-                  <Pie
-                    data={sortedPieData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={true}
-                    outerRadius={160}
-                    fill="#8884d8"
-                    dataKey="value"
-                    label={({
-                      cx,
-                      cy,
-                      midAngle,
-                      outerRadius,
-                      value,
-                      name
-                    }) => {
-                      const RADIAN = Math.PI / 180;
-                      const radius = outerRadius + 20;
-                      const x = cx + radius * Math.cos(-midAngle * RADIAN);
-                      const y = cy + radius * Math.sin(-midAngle * RADIAN);
-
-                      return (
-                        <text
-                          x={x}
-                          y={y}
-                          textAnchor={x > cx ? 'start' : 'end'}
-                          dominantBaseline="central"
-                          className="text-xs"
-                          fill="#666"
-                        >
-                          {`${name} (${value})`}
-                        </text>
-                      );
-                    }}
-                  >
-                    {sortedPieData.map((entry, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={COLORS[entry.name as keyof typeof COLORS] || '#999999'}
-                      />
-                    ))}
-                  </Pie>
-                </PieChart>
-              </div>
-
-              {/* Legend */}
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 mt-4">
-                {sortedPieData.map((entry, index) => (
-                  <div key={`legend-${index}`} className="flex items-center">
-                    <div
-                      className="w-3 h-3 rounded-full mr-2"
-                      style={{
-                        backgroundColor: COLORS[entry.name as keyof typeof COLORS] || '#999999'
-                      }}
-                    />
-                    <span className="text-sm">
-                      {entry.name} ({entry.value})
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+<Card className="mb-6">
+  <CardHeader>
+    <CardTitle>Question Type Distribution</CardTitle>
+  </CardHeader>
+  <CardContent>
+    <QuestionDistributionChart
+      data={sortedPieData}
+      colors={COLORS}
+    />
+  </CardContent>
+</Card>
 
         {/* Question List */}
    {/* Question List */}
