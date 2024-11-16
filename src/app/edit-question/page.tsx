@@ -102,7 +102,6 @@ function EditQuestionForm(){
 
     try {
               console.log("In the edit window");
-            const { originalQuestion, updatedQuestion } = await req.json();
             const csvFilePath = path.join(process.cwd(), 'data', 'merged.csv');
             console.log("csv path",csvFilePath);
 
