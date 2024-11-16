@@ -40,9 +40,9 @@ export async function PUT(req: NextRequest) {
     }
 
     // Remove any undefined values from updatedData
-    const cleanedData = Object.entries(updatedData).reduce<QuestionData>((acc, [key, value]) => {
+    const cleanedData = Object.entries(updatedData).reduce<QuestionUpdate>((acc, [key, value]) => {
       if (value !== undefined) {
-         acc[key as keyof QuestionData] = value;
+         acc[key as keyof QuestionUpdate] = value;
       }
       return acc;
     }, {});
