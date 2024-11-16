@@ -89,6 +89,7 @@ function EditQuestionForm() {
   });
 
   useEffect(() => {
+      console.log(EditQuestionFormData)
     const questionData = searchParams.get('data');
     if (questionData) {
       try {
