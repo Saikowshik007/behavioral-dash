@@ -7,7 +7,7 @@ import Papa from 'papaparse';
 export async function POST(req: NextRequest) {
   try {
     const data = await req.json();
-    const csvFilePath = path.join(process.cwd(), 'public', 'data', 'merged.csv');
+    const csvFilePath = path.join(process.cwd(), 'data', 'merged.csv');
 
 
     const csvContent = await fs.readFile(csvFilePath, 'utf-8');
