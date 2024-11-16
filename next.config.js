@@ -1,5 +1,5 @@
 const isProduction = process.env.NODE_ENV === 'production';
-const repositoryName = 'behavioral-dash'; // Replace with your repository name
+const repositoryName = 'behavioral-dash';
 
 const nextConfig = {
   output: 'export',
@@ -8,8 +8,9 @@ const nextConfig = {
   },
   reactStrictMode: true,
   basePath: isProduction ? `/${repositoryName}` : '',
-  assetPrefix: isProduction ? `/${repositoryName}/` : '',
+  assetPrefix: isProduction ? `/${repositoryName}` : '',
   trailingSlash: true,
+  distDir: 'out',
 
   webpack: (config) => {
     config.module.rules.push({
@@ -17,7 +18,7 @@ const nextConfig = {
       loader: 'file-loader',
       options: {
         name: '[name].[ext]',
-        publicPath: `/_next/static/`,
+        publicPath: isProduction ? `/${repositoryName}/_next/static/` : '/_next/static/',
         outputPath: 'static/',
       },
     });

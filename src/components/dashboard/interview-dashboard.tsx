@@ -124,7 +124,11 @@ const handleEdit = (question: InterviewQA) => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+            const basePath = process.env.NODE_ENV === 'production'
+            ? '/behavioral-dash'
+            : '';
+        const url = `${basePath}/data/merged.csv`;
+        console.log('Attempting to fetch CSV from:', url);
         const response = await fetch(`${basePath}/data/merged.csv`);
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
