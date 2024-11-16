@@ -15,8 +15,10 @@ interface InterviewQA {
 
 export async function PUT(req: NextRequest) {
   try {
+      console.log("In the edit window");
     const { originalQuestion, updatedQuestion } = await req.json();
     const csvFilePath = path.join(process.cwd(), 'data', 'merged.csv');
+    console.log("csv path",csvFilePath);
 
     // Read existing CSV file
     const csvContent = await fs.readFile(csvFilePath, 'utf-8');
