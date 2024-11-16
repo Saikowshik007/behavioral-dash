@@ -5,7 +5,7 @@ import { doc, updateDoc, serverTimestamp, getDoc } from 'firebase/firestore';
 interface QuestionData {
   Question?: string;
   Type?: string;
-  Generic_Answer?: string;
+  Generic?: string;
   Situation?: string;
   Task?: string;
   Action?: string;

@@ -16,6 +16,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 
 interface QuestionFormData {
+  id: string;
   Question: string;
   Type: string;
   Generic: string;
@@ -23,6 +24,22 @@ interface QuestionFormData {
   Task: string;
   Action: string;
   Result: string;
+}
+
+
+interface NewQuestionFormData {
+  Question: string;
+  Type: string;
+  Generic: string;
+  Situation: string;
+  Task: string;
+  Action: string;
+  Result: string;
+}
+
+// For editing existing questions
+interface EditQuestionFormData extends NewQuestionFormData {
+  id: string;
 }
 
 const questionTypes = [
