@@ -39,6 +39,7 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json(
       { error: 'Failed to update question' },
       { status: 500 }
+
     );
   }
 }
