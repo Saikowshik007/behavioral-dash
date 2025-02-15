@@ -411,6 +411,34 @@ const DashboardPage = () => {
 
   const uniqueTypes = ['all', ...new Set(questions.map(q => q.type))];
 
+const QUESTION_TYPES = [
+     'Introduction',
+     'Conflict Resolution',
+     'Problem Solving',
+     'Leadership',
+     'Stress Management',
+     'Decision Making',
+     'Initiative',
+     'Communication',
+     'Time Management',
+     'Customer Service',
+     'Adaptability',
+     'Achievement',
+     'Growth Mindset',
+     'System Design',
+     'Risk Management',
+     'Collaboration',
+     'Strategy',
+     'Development',
+     'Technical Skills',
+     'Interview Questions',
+     'Career Goals',
+     'Work Style',
+     'Innovation',
+     'Efficiency',
+     'Process Improvement'
+   ];
+
 const AddQuestionDialog = ({ open, onOpenChange, onSave, questionTypes }) => {
   const [questionType, setQuestionType] = useState('STAR');
   const [formData, setFormData] = useState({
@@ -513,7 +541,7 @@ const AddQuestionDialog = ({ open, onOpenChange, onSave, questionTypes }) => {
   className="w-full px-3 py-2 border rounded-md"
 >
   <option value="">Select Question Type</option>
-  {Object.keys(COLORS).map(type => (
+  {QUESTION_TYPES.map(type => (
     <option key={type} value={type}>
       {type}
     </option>
