@@ -98,4 +98,3 @@ export const QuestionDistributionChart = ({ data, colors }: ChartProps) => {
     </div>
   );
 };
-
