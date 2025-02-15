@@ -1,12 +1,17 @@
 import * as React from "react"
 import { cn } from "@/lib/utils"
 
-const Button = ({
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  children: React.ReactNode
+}
+
+const Button: React.FC<ButtonProps> = ({
   children,
   type = 'button',
   onClick,
   disabled = false,
-  className = ''
+  className = '',
+  ...props
 }) => {
   return (
     <button
@@ -22,6 +27,7 @@ const Button = ({
         "disabled:opacity-50 disabled:cursor-not-allowed",
         className
       )}
+      {...props}
     >
       {children}
     </button>
