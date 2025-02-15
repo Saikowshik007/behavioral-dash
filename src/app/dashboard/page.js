@@ -507,18 +507,18 @@ const AddQuestionDialog = ({ open, onOpenChange, onSave, questionTypes }) => {
             />
           </div>
 
-          <select
-            value={formData.type}
-            onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value }))}
-            className="w-full px-3 py-2 border rounded-md"
-          >
-            <option value="">Select Question Type</option>
-            {questionTypes.filter(type => type !== 'all').map(type => (
-              <option key={type} value={type}>
-                {type.charAt(0).toUpperCase() + type.slice(1)}
-              </option>
-            ))}
-          </select>
+<select
+  value={formData.type}
+  onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value }))}
+  className="w-full px-3 py-2 border rounded-md"
+>
+  <option value="">Select Question Type</option>
+  {Object.keys(COLORS).map(type => (
+    <option key={type} value={type}>
+      {type}
+    </option>
+  ))}
+</select>
 
           {questionType === 'generic' ? (
             <textarea
