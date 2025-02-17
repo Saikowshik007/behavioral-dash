@@ -611,7 +611,7 @@ const AddQuestionDialog = ({ open, onOpenChange, onSave, questionTypes }) => {
             {/* Left: Title */}
             <div>
               <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                Questions Dashboard
+                Behavioral Interview Dashboard
               </h1>
             </div>
 
@@ -713,6 +713,24 @@ const AddQuestionDialog = ({ open, onOpenChange, onSave, questionTypes }) => {
           </AlertDialog>
         </div>
       </div>
+{/* Footer */}
+<footer className="mt-8 p-4 bg-gradient-to-r from-blue-600/10 to-purple-600/10 border-t border-gray-200 backdrop-blur-sm">
+  <div className="max-w-4xl mx-auto">
+    <div className="text-center space-y-2">
+          <p className="text-gray-600 font-medium">
+            Developed by{' '}
+            <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              Sai Kowshik Ananthula
+            </span>
+          </p>
+      <p className="text-gray-600 hover:text-blue-600 transition-colors">
+        <a href="mailto:askowshik@outlook.com" className="hover:underline">
+          For any queries contact: askowshik@outlook.com
+        </a>
+      </p>
+    </div>
+  </div>
+</footer>
     </ToastProvider>
   );
 };

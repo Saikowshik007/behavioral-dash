@@ -10,32 +10,29 @@ import { auth, db } from './firebase';
 
 const googleProvider = new GoogleAuthProvider();
 
-const createInitialQuestions = async (userId) => {
-  const sampleQuestions = {
-    "Tell me about a challenging project": {
-      situation: "Working on a complex web application with tight deadlines",
-      task: "Needed to implement a new feature while maintaining code quality",
-      action: "Organized team meetings, created detailed documentation, used agile methodology",
-      result: "Delivered the project on time with high quality",
-      generic: "",
-      type: "Problem Solving",
-      updatedAt: new Date().toISOString()
-    },
-    "Describe a time you showed leadership": {
-      situation: "Team was struggling with unclear requirements",
-      task: "Had to improve team communication and project clarity",
-      action: "Initiated daily stand-ups, created requirement documentation",
-      result: "Improved team productivity and project understanding",
-      generic: "",
-      type: "Leadership",
-      updatedAt: new Date().toISOString()
-    }
-  };
 
+const createInitialQuestions = async (userId) => {
   try {
-    await setDoc(doc(db, 'questions', userId), sampleQuestions);
+    console.log('Creating initial questions for user:', userId);
+    const response = await fetch(`${window.location.origin}/questions.json`);
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const sampleQuestions = await response.json();
+
+    Object.keys(sampleQuestions).forEach(key => {
+      sampleQuestions[key].updatedAt = new Date().toISOString();
+    });
+
+    const questionsRef = doc(db, 'questions', userId);
+    await setDoc(questionsRef, sampleQuestions);
+
+    console.log('Successfully saved questions for user:', userId);
+    return true;
   } catch (error) {
-    console.error('Error creating initial questions:', error);
+    console.error('Error loading questions:', error);
     throw error;
   }
 };
