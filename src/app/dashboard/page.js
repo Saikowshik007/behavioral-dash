@@ -720,7 +720,9 @@ const AddQuestionDialog = ({ open, onOpenChange, onSave, questionTypes }) => {
           <p className="text-gray-600 font-medium">
             Developed by{' '}
             <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              Sai Kowshik Ananthula
+                                      <a href="https://saikowshik007.github.io/" className="hover:underline">
+                                        Sai Kowshik Ananthula
+                                        </a>
             </span>
           </p>
       <p className="text-gray-600 hover:text-blue-600 transition-colors">

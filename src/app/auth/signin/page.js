@@ -34,14 +34,22 @@ export default function SignInPage() {
           <div className="text-center space-y-2">
                       <p className="text-gray-600 font-medium">
                         Developed by{' '}
+
                         <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                        <a href="https://saikowshik007.github.io/" className="hover:underline">
                           Sai Kowshik Ananthula
+                          </a>
                         </span>
+
                       </p>
+
             <p className="text-gray-600 hover:text-blue-600 transition-colors">
               <a href="mailto:askowshik@outlook.com" className="hover:underline">
                 For any queries contact: askowshik@outlook.com
               </a>
+
+
+
             </p>
           </div>
         </div>
